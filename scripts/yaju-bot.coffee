@@ -27,7 +27,9 @@ cron = require('cron').CronJob
 path = require('path')
 cheerio = require('cheerio-httpcli')
 exec = require('child_process').exec
-msgs = require('/mnt/meigen.json')
+#msgs = require('/mnt/meigen.json')
+msgs = require('../mnt/meigen.json')
+arxiv = require('arxiv')
 
 module.exports = (robot) ->
         #淫夢語録
@@ -39,7 +41,7 @@ module.exports = (robot) ->
                         msg.send "#{message}"
         #ニュース                       
         robot.respond /news/i, (msg) ->
-                msg.send "本日のニュース:"                
+                msg.send "本日のニュース: (https://news.yahoo.co.jp/)"                
                 url = 'http://www.yahoo.co.jp/'
                 cheerio.fetch url, {}, (err, $, res)->
                         $('ul.emphasis > li > a').each () -> 
@@ -86,8 +88,33 @@ module.exports = (robot) ->
                 else
                         msg.send ":pallot:"
 
+        #arxiv URLのtitleとabstractを表示
+        robot.hear /https\:\/\/arxiv\.org\/abs\/(.*)/i, (msg) ->
+                paper_url = msg.match[1]
+                url = "https://arxiv.org/abs/#{paper_url}"
+                cheerio.fetch url, {}, (err, $, res) ->
+                        title = $('title').text()
+                        text = $('#abs').find('.abstract.mathjax').text();
+                        #msg.send "Title:#{title}\n \n#{text}"
+                        data =
+                            content:
+                              author_icon: "https://arxiv.org/favicon.ico"
+                              author_name: "Arxiv"
+                              title: title
+                              title_link: url
+                              #text: text
+                              fallback: "Attachemnt fallback"
+                              fields: [{
+                                title: title
+                                value: text
+                              }]
+                            channel: msg.envelope.room
+                            username: "芽兎めうbot"
+                            icon_emoji: ":tikeda:"
+                        robot.emit "slack.attachment", data
+
         #きたないやつ
-        robot.hear /オナニー/i, (msg) ->
+        robot.hear /野獣先輩/i, (msg) ->
                 url = [
                         "https://img.gifmagazine.net/gifmagazine/images/2308226/original.gif",
                         "https://img.gifmagazine.net/gifmagazine/images/1296405/original.gif",
